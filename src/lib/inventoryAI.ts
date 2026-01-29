@@ -3,7 +3,7 @@
 // AI-Powered Inventory Intelligence System
 // ===================================================================
 import { InventoryItem } from './firebaseCollections';
-import { addDays, subDays, format, startOfWeek, endOfWeek } from 'date-fns';
+import { addDays } from 'date-fns';
 
 export interface UsagePrediction {
   itemId: string;
@@ -35,6 +35,8 @@ export interface WasteOpportunity {
   estimatedWasteValue: number;
   recommendation: string;
   potentialSavings: number;
+  // Added optional index signature to allow for additional properties if needed
+  [key: string]: any;
 }
 
 export interface SupplierDeal {
@@ -302,17 +304,3 @@ export class InventoryAI {
     return Math.sqrt(variance) / mean; // Coefficient of variation
   }
 }
-
-// ===================================================================
-// FILE: src/components/inventory/InventoryDashboard.tsx
-// AI-Powered Inventory Dashboard Component
-// ===================================================================
-import React, { useState, useEffect } from 'react';
-import { InventoryAI, UsagePrediction, ReorderRecommendation, WasteOpportunity } from '@/lib/inventoryAI';
-import { InventoryItem } from '@/lib/firebaseCollections';
-import { TrendingUp, TrendingDown, AlertTriangle, DollarSign, Package, ShoppingCart } from 'lucide-react';
-
-export const InventoryDashboard: React.FC<{ venueId: string }> = ({ venueId }) => {
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [predictions, setPredictions] = useState<UsagePrediction[]>([]);
-  const [reorderRecs, setReorderRecs] = useState<ReorderRecommendation[]>([]);

@@ -1,3 +1,17 @@
+// ===================================================================
+// FILE: src/components/inventory/InventoryDashboard.tsx
+// AI-Powered Inventory Dashboard Component
+// ===================================================================
+import React, { useState, useEffect } from 'react';
+import { InventoryAI, UsagePrediction, ReorderRecommendation, WasteOpportunity } from '@/lib/inventoryAI';
+import { InventoryItem, inventoryCollection } from '@/lib/firebaseCollections';
+import { getDocs, query, where } from 'firebase/firestore';
+import { TrendingUp, TrendingDown, AlertTriangle, DollarSign, Package, ShoppingCart } from 'lucide-react';
+
+export const InventoryDashboard: React.FC<{ venueId: string }> = ({ venueId }) => {
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [predictions, setPredictions] = useState<UsagePrediction[]>([]);
+  const [reorderRecs, setReorderRecs] = useState<ReorderRecommendation[]>([]);
   const [wasteOps, setWasteOps] = useState<WasteOpportunity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -6,59 +20,87 @@
   }, [venueId]);
 
   const loadInventoryData = async () => {
-    // In production, load from Firebase
-    // Mock data for demonstration
-    const mockInventory: InventoryItem[] = [
-      {
-        id: 'inv1',
-        venueId,
-        category: 'Vodka',
-        name: 'Premium Vodka',
-        brand: 'Grey Goose',
-        quantity: 8,
-        unit: 'liter',
-        parLevel: 15,
-        costPerUnit: 42.00,
-        lastUpdated: new Date(),
-      },
-      // ... more items
-    ];
+    try {
+      // Fetch from Firestore
+      const q = query(inventoryCollection, where('venueId', '==', venueId));
+      const snapshot = await getDocs(q);
+      
+      let fetchedInventory: InventoryItem[] = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id,
+        // Convert timestamp to Date if needed, Firestore returns Timestamp objects
+        lastUpdated: doc.data().lastUpdated?.toDate() || new Date(), 
+      } as InventoryItem));
 
-    const mockSales = [45, 48, 52, 47, 50, 55, 53, 58, 60, 57, 62, 65, 63, 68];
-    
-    const predictions = mockInventory.map(item => 
-      InventoryAI.predictUsage(item, mockSales, ['Live Music Friday'], new Date().getDay())
-    );
+      // Fallback to mock if empty (for demo purposes so the app isn't empty on first run)
+      if (fetchedInventory.length === 0) {
+        fetchedInventory = [
+          {
+            id: 'inv1',
+            venueId,
+            category: 'Vodka',
+            name: 'Premium Vodka',
+            brand: 'Grey Goose',
+            quantity: 8,
+            unit: 'liter',
+            parLevel: 15,
+            costPerUnit: 42.00,
+            lastUpdated: new Date(),
+          },
+          {
+            id: 'inv2',
+            venueId,
+            category: 'Whiskey',
+            name: 'Bourbon',
+            brand: 'Makers Mark',
+            quantity: 12,
+            unit: 'liter',
+            parLevel: 10,
+            costPerUnit: 35.00,
+            lastUpdated: new Date(),
+          }
+        ];
+      }
 
-    const mockSuppliers = [
-      {
-        supplierId: 'sup1',
-        supplierName: 'Premium Spirits Co',
-        items: ['inv1'],
-        discountPercent: 15,
-        minimumOrderValue: 500,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        category: 'Vodka',
-      },
-    ];
+      const mockSales = [45, 48, 52, 47, 50, 55, 53, 58, 60, 57, 62, 65, 63, 68];
+      
+      const predictions = fetchedInventory.map(item => 
+        InventoryAI.predictUsage(item, mockSales, ['Live Music Friday'], new Date().getDay())
+      );
 
-    const recommendations = InventoryAI.generateReorderRecommendations(
-      mockInventory,
-      predictions,
-      mockSuppliers
-    );
+      const mockSuppliers = [
+        {
+          supplierId: 'sup1',
+          supplierName: 'Premium Spirits Co',
+          items: ['inv1', 'inv2'],
+          discountPercent: 15,
+          minimumOrderValue: 500,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          category: 'Vodka',
+        },
+      ];
 
-    const wasteOpportunities = InventoryAI.identifyWasteOpportunities(
-      mockInventory,
-      predictions,
-      []
-    );
+      const recommendations = InventoryAI.generateReorderRecommendations(
+        fetchedInventory,
+        predictions,
+        mockSuppliers
+      );
 
-    setInventory(mockInventory);
-    setPredictions(predictions);
-    setReorderRecs(recommendations);
-    setWasteOps(wasteOpportunities);
-    setLoading(false);
+      const wasteOpportunities = InventoryAI.identifyWasteOpportunities(
+        fetchedInventory,
+        predictions,
+        []
+      );
+
+      setInventory(fetchedInventory);
+      setPredictions(predictions);
+      setReorderRecs(recommendations);
+      setWasteOps(wasteOpportunities);
+    } catch (error) {
+      console.error("Error loading inventory:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
