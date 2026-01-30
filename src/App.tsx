@@ -11,6 +11,7 @@ import ChecklistPage from './pages/ChecklistPage';
 import AuditPage from './pages/AuditPage';
 import TeamPage from './pages/TeamPage';
 import SettingsPage from './pages/SettingsPage';
+import PricingPage from './pages/PricingPage';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import TermsOfService from './pages/legal/TermsOfService';
 
@@ -178,6 +179,7 @@ function AppRoutes() {
             path="settings" 
             element={<SettingsPage />} 
           />
+          <Route path="pricing" element={<PricingPage />} />
           <Route path="legal/privacy" element={<PrivacyPolicy />} />
           <Route path="legal/terms" element={<TermsOfService />} />
         </Route>

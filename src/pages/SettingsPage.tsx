@@ -4,7 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { 
   LogOut, User, Shield, Sun, Moon, Monitor, 
-  Mic, MicOff, Brain, BrainCircuit, Sparkles, Zap, Palette
+  Mic, MicOff, Brain, BrainCircuit, Sparkles, Zap, Palette,
+  CreditCard, Crown, ExternalLink
 } from 'lucide-react';
 
 const SettingsPage = () => {
@@ -188,6 +189,46 @@ const SettingsPage = () => {
             }`}>
               {user?.role}
             </span>
+          </div>
+        </div>
+      </Section>
+
+      {/* Subscription Section */}
+      <Section title="Subscription" icon={CreditCard} color="purple">
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center">
+                <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400 mr-3">
+                  <Crown size={20} />
+                </div>
+                <div>
+                  <p className="font-bold text-white">Current Plan</p>
+                  <p className="text-sm text-white/50">Professional</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold border border-green-500/30">
+                Active
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-white/50">Next billing date</span>
+              <span className="text-white">Feb 15, 2026</span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <button 
+              onClick={() => navigate('/pricing')}
+              className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-center group"
+            >
+              <ExternalLink size={16} className="mx-auto mb-1 text-white/40 group-hover:text-white/60" />
+              <span className="text-sm text-white/80">Change Plan</span>
+            </button>
+            <button className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-center group">
+              <CreditCard size={16} className="mx-auto mb-1 text-white/40 group-hover:text-white/60" />
+              <span className="text-sm text-white/80">Billing History</span>
+            </button>
           </div>
         </div>
       </Section>
