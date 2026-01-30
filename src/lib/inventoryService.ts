@@ -1,19 +1,26 @@
 import { 
   collection, doc, writeBatch, getDocs, query, where, 
-  addDoc, serverTimestamp, setDoc, getDoc, updateDoc 
+  addDoc, serverTimestamp, setDoc, getDoc, updateDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { 
   CATEGORIES, MasterItem, InventorySession, 
-  InventoryLine, LocationItem, InventoryCategoryType 
+  InventoryLine, InventoryCategoryType 
 } from '../types/inventoryTypes';
+
+// Helper to check if db is valid
+const isDbValid = (): boolean => {
+  return db && typeof db === 'object' && Object.keys(db).length > 0;
+};
 
 // ============================================================================
 // SEEDING
 // ============================================================================
 
 export const seedMasterInventory = async () => {
-  if (!db) return;
+  if (!isDbValid()) {
+    throw new Error("Database not initialized. Check Firebase configuration.");
+  }
   
   // Check if already seeded by looking for RW-01
   const checkDoc = await getDoc(doc(db, 'items', 'RW-01'));
@@ -72,6 +79,10 @@ export const seedMasterInventory = async () => {
 // ============================================================================
 
 export const startInventorySession = async (locationId: string, userId: string) => {
+  if (!isDbValid()) {
+    throw new Error("Database not initialized.");
+  }
+
   const sessionData: Omit<InventorySession, 'id'> = {
     locationId,
     startedAt: serverTimestamp(),
@@ -88,6 +99,8 @@ export const saveInventoryLine = async (
   item: MasterItem, 
   count: number
 ) => {
+  if (!isDbValid()) throw new Error("Database not initialized.");
+
   // Get previous on-hand (optional read, can be cached)
   const locItemRef = doc(db, 'locationItems', `${locationId}_${item.id}`);
   const locItemSnap = await getDoc(locItemRef);
@@ -109,6 +122,8 @@ export const saveInventoryLine = async (
 };
 
 export const completeInventorySession = async (sessionId: string, locationId: string) => {
+  if (!isDbValid()) throw new Error("Database not initialized.");
+
   const sessionRef = doc(db, 'inventorySessions', sessionId);
   
   // 1. Get all lines
@@ -139,6 +154,8 @@ export const completeInventorySession = async (sessionId: string, locationId: st
 };
 
 export const getCategoryProgress = async (sessionId: string, categoryId: string) => {
+  if (!isDbValid()) return 0;
+
   const q = query(
     collection(db, 'inventorySessions', sessionId, 'lines'),
     where('categoryId', '==', categoryId)
