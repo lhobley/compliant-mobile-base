@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { 
   LogOut, User, Shield, Sun, Moon, Monitor, 
-  Mic, MicOff, Brain, BrainCircuit 
+  Mic, MicOff, Brain, BrainCircuit, Sparkles, Zap, Palette
 } from 'lucide-react';
 
 const SettingsPage = () => {
@@ -25,186 +25,197 @@ const SettingsPage = () => {
   const Toggle = ({ 
     enabled, 
     onToggle, 
-    iconOn: IconOn, 
-    iconOff: IconOff,
+    icon: Icon,
     label,
-    description 
+    description,
+    color = 'blue'
   }: { 
     enabled: boolean; 
     onToggle: () => void;
-    iconOn: React.ElementType;
-    iconOff: React.ElementType;
+    icon: React.ElementType;
     label: string;
     description: string;
+    color?: string;
   }) => (
-    <div className="flex items-center justify-between py-4">
+    <div className="flex items-center justify-between py-4 group">
       <div className="flex items-center">
-        <div className={`p-2 rounded-lg mr-4 ${enabled ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
-          {enabled ? <IconOn size={20} /> : <IconOff size={20} />}
+        <div className={`p-3 rounded-xl mr-4 transition-all duration-300 ${
+          enabled 
+            ? `bg-${color}-500/20 text-${color}-400 shadow-lg shadow-${color}-500/20` 
+            : 'bg-white/5 text-white/40'
+        }`}>
+          <Icon size={22} />
         </div>
         <div>
-          <p className="font-medium text-gray-900">{label}</p>
-          <p className="text-sm text-gray-500">{description}</p>
+          <p className="font-bold text-white">{label}</p>
+          <p className="text-sm text-white/50">{description}</p>
         </div>
       </div>
       <button
         onClick={onToggle}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          enabled ? 'bg-blue-600' : 'bg-gray-200'
+        className={`relative inline-flex h-7 w-14 items-center rounded-full transition-all duration-300 ${
+          enabled ? `bg-${color}-500 shadow-lg shadow-${color}-500/50` : 'bg-white/10'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            enabled ? 'translate-x-6' : 'translate-x-1'
+          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+            enabled ? 'translate-x-7' : 'translate-x-1'
           }`}
         />
       </button>
     </div>
   );
 
+  const Section = ({ title, icon: Icon, children, color = 'blue' }: { 
+    title: string; 
+    icon: React.ElementType; 
+    children: React.ReactNode;
+    color?: string;
+  }) => (
+    <div className="relative rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 overflow-hidden group">
+      {/* Glow effect */}
+      <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-${color}-500 via-${color}-400 to-${color}-500 opacity-50`} />
+      
+      <div className="px-6 py-4 border-b border-white/5 flex items-center">
+        <div className={`p-2 rounded-lg mr-3 bg-${color}-500/20 text-${color}-400`}>
+          <Icon size={20} />
+        </div>
+        <h2 className="text-lg font-bold text-white">{title}</h2>
+      </div>
+      <div className="p-6">
+        {children}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500 mt-1">Manage your account and preferences</p>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="relative mb-8">
+        <h1 className="text-4xl font-black text-white mb-2">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+            Settings
+          </span>
+        </h1>
+        <p className="text-white/50">Manage your account and preferences</p>
+        <Sparkles className="absolute -top-2 -right-2 text-yellow-400 animate-pulse" size={24} />
       </div>
 
       {/* Appearance Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Monitor className="mr-2 text-purple-500" size={20} />
-            Appearance
-          </h2>
+      <Section title="Appearance" icon={Palette} color="purple">
+        <p className="text-sm text-white/50 mb-4">Choose your preferred theme</p>
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { value: 'light', icon: Sun, label: 'Light', color: 'from-orange-400 to-yellow-400' },
+            { value: 'dark', icon: Moon, label: 'Dark', color: 'from-indigo-400 to-purple-400' },
+            { value: 'system', icon: Monitor, label: 'System', color: 'from-blue-400 to-cyan-400' },
+          ].map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setTheme(option.value as any)}
+              className={`relative p-4 rounded-xl border-2 transition-all duration-300 group ${
+                theme === option.value 
+                  ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20' 
+                  : 'border-white/10 hover:border-white/30 bg-white/5'
+              }`}
+            >
+              <div className={`w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br ${option.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                <option.icon className="text-white" size={24} />
+              </div>
+              <p className="text-sm font-bold text-white">{option.label}</p>
+              {theme === option.value && (
+                <div className="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+              )}
+            </button>
+          ))}
         </div>
-        <div className="p-6">
-          <p className="text-sm text-gray-600 mb-4">Choose your preferred theme</p>
-          <div className="grid grid-cols-3 gap-4">
-            <button
-              onClick={() => setTheme('light')}
-              className={`p-4 rounded-xl border-2 transition-all ${
-                theme === 'light' 
-                  ? 'border-blue-500 bg-blue-50' 
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <Sun className="mx-auto mb-2 text-orange-500" size={24} />
-              <p className="text-sm font-medium text-gray-900">Light</p>
-            </button>
-            <button
-              onClick={() => setTheme('dark')}
-              className={`p-4 rounded-xl border-2 transition-all ${
-                theme === 'dark' 
-                  ? 'border-blue-500 bg-blue-50' 
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <Moon className="mx-auto mb-2 text-indigo-500" size={24} />
-              <p className="text-sm font-medium text-gray-900">Dark</p>
-            </button>
-            <button
-              onClick={() => setTheme('system')}
-              className={`p-4 rounded-xl border-2 transition-all ${
-                theme === 'system' 
-                  ? 'border-blue-500 bg-blue-50' 
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <Monitor className="mx-auto mb-2 text-gray-500" size={24} />
-              <p className="text-sm font-medium text-gray-900">System</p>
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 mt-4">
-            Current mode: <span className="font-medium">{isDarkMode ? 'Dark' : 'Light'}</span>
-          </p>
-        </div>
-      </div>
+        <p className="text-xs text-white/40 mt-4">
+          Current mode: <span className="font-bold text-white/60">{isDarkMode ? 'Dark' : 'Light'}</span>
+        </p>
+      </Section>
 
       {/* Features Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Brain className="mr-2 text-green-500" size={20} />
-            Features
-          </h2>
-        </div>
-        <div className="px-6 divide-y divide-gray-100">
+      <Section title="Features" icon={Zap} color="yellow">
+        <div className="divide-y divide-white/5">
           <Toggle
             enabled={voiceEnabled}
             onToggle={() => setVoiceEnabled(!voiceEnabled)}
-            iconOn={Mic}
-            iconOff={MicOff}
+            icon={voiceEnabled ? Mic : MicOff}
             label="Voice Guidance"
             description="Enable voice-guided audits and inventory counts"
+            color="cyan"
           />
           <Toggle
             enabled={aiFeaturesEnabled}
             onToggle={() => setAiFeaturesEnabled(!aiFeaturesEnabled)}
-            iconOn={BrainCircuit}
-            iconOff={Brain}
+            icon={aiFeaturesEnabled ? BrainCircuit : Brain}
             label="AI Features"
             description="Enable AI photo analysis and smart suggestions"
+            color="purple"
           />
         </div>
         {!aiFeaturesEnabled && (
-          <div className="px-6 py-3 bg-yellow-50 border-t border-yellow-100">
-            <p className="text-sm text-yellow-700">
-              AI features are disabled. You can still use manual input for all features.
+          <div className="mt-4 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+            <p className="text-sm text-yellow-400">
+              <Zap size={14} className="inline mr-2" />
+              AI features are disabled. Manual input is still available.
             </p>
           </div>
         )}
-      </div>
+      </Section>
 
       {/* Account Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <User className="mr-2 text-blue-500" size={20} />
-            Account
-          </h2>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="flex justify-between items-center">
+      <Section title="Account" icon={User} color="blue">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
             <div>
-              <p className="font-medium text-gray-900">Email</p>
-              <p className="text-sm text-gray-500">{user?.email}</p>
+              <p className="text-sm text-white/50 mb-1">Email</p>
+              <p className="font-bold text-white">{user?.email}</p>
+            </div>
+            <div className="p-2 rounded-lg bg-white/5 text-white/40">
+              <User size={18} />
             </div>
           </div>
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
             <div>
-              <p className="font-medium text-gray-900">Role</p>
-              <p className="text-sm text-gray-500 capitalize">{user?.role}</p>
+              <p className="text-sm text-white/50 mb-1">Role</p>
+              <p className="font-bold text-white capitalize">{user?.role}</p>
             </div>
-            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase">
+            <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase ${
+              user?.role === 'owner' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+              user?.role === 'manager' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+              'bg-green-500/20 text-green-400 border border-green-500/30'
+            }`}>
               {user?.role}
             </span>
           </div>
         </div>
-      </div>
+      </Section>
 
       {/* Security Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Shield className="mr-2 text-green-500" size={20} />
-            Security
-          </h2>
-        </div>
-        <div className="p-6">
-          <button className="text-blue-600 hover:text-blue-800 font-medium text-sm">
-            Change Password
-          </button>
-        </div>
-      </div>
+      <Section title="Security" icon={Shield} color="green">
+        <button className="w-full p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-left group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold text-white">Change Password</p>
+              <p className="text-sm text-white/50">Update your account password</p>
+            </div>
+            <Shield className="text-white/30 group-hover:text-green-400 transition-colors" size={24} />
+          </div>
+        </button>
+      </Section>
 
       {/* Logout Section */}
-      <div className="bg-red-50 rounded-xl border border-red-200 overflow-hidden">
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-red-900 mb-2">Session</h2>
-          <p className="text-sm text-red-600 mb-4">Sign out of your account on this device</p>
+      <div className="relative rounded-2xl bg-gradient-to-br from-red-500/10 to-orange-500/10 backdrop-blur-lg border border-red-500/20 overflow-hidden p-6">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500 opacity-50" />
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-white mb-1">End Session</h2>
+            <p className="text-sm text-white/50">Sign out of your account</p>
+          </div>
           <button 
             onClick={handleLogout}
-            className="flex items-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold transition-colors"
+            className="flex items-center bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-500/30 hover:shadow-red-500/50 hover:scale-105"
           >
             <LogOut className="mr-2" size={18} />
             Log Out
