@@ -4,8 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Mail, User, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 import { VideoIntro } from '../components/VideoIntro';
+import VenueSetup from '../components/VenueSetup';
 
-type AuthMode = 'login' | 'signup' | 'forgot';
+type AuthMode = 'login' | 'signup' | 'forgot' | 'setup';
 
 const LoginPage = () => {
   const { login, signup, resetPassword } = useAuth();
@@ -36,8 +37,8 @@ const LoginPage = () => {
       } else if (mode === 'signup') {
         await signup(email, password, name);
         setLoading(false);
-        setIsAnimating(true);
-        setTimeout(() => navigate('/'), 2800);
+        // Move to setup phase
+        setMode('setup');
       } else if (mode === 'forgot') {
         await resetPassword(email);
         setSuccessMsg('Check your email for password reset instructions.');
@@ -54,6 +55,11 @@ const LoginPage = () => {
       setError(msg);
       setLoading(false);
     }
+  };
+
+  const handleSetupComplete = () => {
+    setIsAnimating(true);
+    setTimeout(() => navigate('/'), 2800);
   };
 
   const switchMode = (newMode: AuthMode) => {
@@ -203,7 +209,7 @@ const LoginPage = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.3 } }}
-            className="w-full max-w-md p-8 z-10"
+            className={`w-full ${mode === 'setup' ? 'max-w-2xl' : 'max-w-md'} p-8 z-10 transition-all duration-500`}
           >
             {/* Glassmorphism card */}
             <div className="relative rounded-2xl overflow-hidden">
@@ -213,68 +219,74 @@ const LoginPage = () => {
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
               
               <div className="relative p-8">
-                {/* Logo */}
-                <div className="flex justify-center mb-6">
-                  <div className="relative">
-                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center p-1 shadow-2xl shadow-cyan-500/30">
-                      <div className="w-full h-full rounded-xl bg-slate-900 flex items-center justify-center overflow-hidden">
-                        <img src="/logo.png" alt="ComplianceDaddy" className="w-20 h-20 object-contain" />
+                {mode === 'setup' ? (
+                  <VenueSetup onComplete={handleSetupComplete} />
+                ) : (
+                  <>
+                    {/* Logo */}
+                    <div className="flex justify-center mb-6">
+                      <div className="relative">
+                        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center p-1 shadow-2xl shadow-cyan-500/30">
+                          <div className="w-full h-full rounded-xl bg-slate-900 flex items-center justify-center overflow-hidden">
+                            <img src="/logo.png" alt="ComplianceDaddy" className="w-20 h-20 object-contain" />
+                          </div>
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 rounded-full border-4 border-slate-900 animate-pulse" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 rounded-full border-4 border-slate-900 animate-pulse" />
-                  </div>
-                </div>
-                
-                {/* Title */}
-                <h2 className="text-3xl font-black text-center text-white mb-2">
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400">
-                    {mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Get Started' : 'Reset Password'}
-                  </span>
-                </h2>
-                <p className="text-center text-white/50 mb-8">
-                  {mode === 'login' ? 'Sign in to your account' : mode === 'signup' ? 'Create your free account' : 'Enter your email to receive instructions'}
-                </p>
-
-                {/* Alerts */}
-                {error && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm text-center"
-                  >
-                    {error}
-                  </motion.div>
-                )}
-                {successMsg && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm text-center"
-                  >
-                    {successMsg}
-                  </motion.div>
-                )}
-
-                {renderForm()}
-
-                {/* Switch mode */}
-                <div className="mt-6 text-center">
-                  {mode === 'login' ? (
-                    <p className="text-sm text-white/50">
-                      Don't have an account?{' '}
-                      <button onClick={() => switchMode('signup')} className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors">
-                        Sign Up
-                      </button>
+                    
+                    {/* Title */}
+                    <h2 className="text-3xl font-black text-center text-white mb-2">
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400">
+                        {mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Get Started' : 'Reset Password'}
+                      </span>
+                    </h2>
+                    <p className="text-center text-white/50 mb-8">
+                      {mode === 'login' ? 'Sign in to your account' : mode === 'signup' ? 'Create your free account' : 'Enter your email to receive instructions'}
                     </p>
-                  ) : (
-                    <p className="text-sm text-white/50">
-                      Already have an account?{' '}
-                      <button onClick={() => switchMode('login')} className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors">
-                        Sign In
-                      </button>
-                    </p>
-                  )}
-                </div>
+
+                    {/* Alerts */}
+                    {error && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm text-center"
+                      >
+                        {error}
+                      </motion.div>
+                    )}
+                    {successMsg && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm text-center"
+                      >
+                        {successMsg}
+                      </motion.div>
+                    )}
+
+                    {renderForm()}
+
+                    {/* Switch mode */}
+                    <div className="mt-6 text-center">
+                      {mode === 'login' ? (
+                        <p className="text-sm text-white/50">
+                          Don't have an account?{' '}
+                          <button onClick={() => switchMode('signup')} className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors">
+                            Sign Up
+                          </button>
+                        </p>
+                      ) : (
+                        <p className="text-sm text-white/50">
+                          Already have an account?{' '}
+                          <button onClick={() => switchMode('login')} className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors">
+                            Sign In
+                          </button>
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             

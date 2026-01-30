@@ -1,26 +1,91 @@
 import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Shield, Mail, Trash2, MoreVertical, CheckCircle, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { initializeApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { db, app } from '../lib/firebase';
+import { X } from 'lucide-react';
 
 const TeamPage = () => {
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   
-  // Mock Data
+  // Mock Data (replace with real fetch in production)
   const [teamMembers, setTeamMembers] = useState([
     { id: 1, name: 'Sarah Owner', email: 'sarah@venue.com', role: 'owner', status: 'active', lastActive: 'Now' },
     { id: 2, name: 'Mike Manager', email: 'mike@venue.com', role: 'manager', status: 'active', lastActive: '2h ago' },
-    { id: 3, name: 'Sam Staff', email: 'sam@venue.com', role: 'staff', status: 'active', lastActive: '5m ago' },
-    { id: 4, name: 'Jessica Bartender', email: 'jess@venue.com', role: 'staff', status: 'invited', lastActive: '-' },
   ]);
 
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  
+  // New Member Form State
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [newMemberPassword, setNewMemberPassword] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState('staff');
 
   // Email Settings State
   const [reportEmail, setReportEmail] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
   const [emailSaved, setEmailSaved] = useState(false);
+
+  // ... (rest of existing code)
+
+  const handleCreateMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMemberEmail || !newMemberPassword || !newMemberName) return;
+    
+    setIsCreating(true);
+    try {
+      // Initialize a secondary Firebase app to create user without logging out the admin
+      const secondaryApp = initializeApp(app.options, 'Secondary');
+      const secondaryAuth = getAuth(secondaryApp);
+
+      // Create the user in Auth
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, newMemberEmail, newMemberPassword);
+      const newUser = userCredential.user;
+
+      // Create profile in Firestore (using main app's db)
+      await setDoc(doc(db, 'profiles', newUser.uid), {
+        name: newMemberName,
+        email: newMemberEmail,
+        role: newMemberRole,
+        venueId: user?.id, // Link to owner's venue
+        createdAt: new Date().toISOString(),
+        createdBy: user?.id
+      });
+
+      // Sign out the secondary auth so it doesn't interfere
+      await signOut(secondaryAuth);
+      
+      // Update local state (mock)
+      setTeamMembers(prev => [...prev, {
+        id: Date.now(),
+        name: newMemberName,
+        email: newMemberEmail,
+        role: newMemberRole,
+        status: 'active',
+        lastActive: '-'
+      }]);
+
+      setShowInviteModal(false);
+      
+      // Reset form
+      setNewMemberName('');
+      setNewMemberEmail('');
+      setNewMemberPassword('');
+      setNewMemberRole('staff');
+
+      alert(`User created! \nEmail: ${newMemberEmail}\nPassword: ${newMemberPassword}`);
+
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      alert("Failed to create user: " + error.message);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   // Load Settings
   useEffect(() => {
@@ -224,6 +289,100 @@ const TeamPage = () => {
                 <CheckCircle size={14} className="mr-1" /> Settings saved successfully
               </p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Invite Member Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowInviteModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h3 className="text-xl font-bold text-gray-900">Add Team Member</h3>
+              <button onClick={() => setShowInviteModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateMember} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newMemberName}
+                  onChange={(e) => setNewMemberName(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  placeholder="John Doe"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={newMemberEmail}
+                  onChange={(e) => setNewMemberEmail(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  placeholder="staff@venue.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assign Password</label>
+                <input
+                  type="password"
+                  required
+                  value={newMemberPassword}
+                  onChange={(e) => setNewMemberPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  placeholder="••••••••"
+                  minLength={6}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  You must share these credentials with the staff member.
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {['manager', 'staff'].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setNewMemberRole(r)}
+                      className={`py-2 px-4 rounded-lg text-sm font-medium capitalize border transition-all ${
+                        newMemberRole === r
+                          ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
+                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreating}
+                  className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-70 flex items-center justify-center"
+                >
+                  {isCreating ? <Loader2 className="animate-spin" size={18} /> : 'Create User'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
