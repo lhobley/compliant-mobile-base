@@ -7,6 +7,7 @@ import {
   Mic, MicOff, Brain, BrainCircuit, Sparkles, Zap, Palette,
   CreditCard, Crown, ExternalLink
 } from 'lucide-react';
+import POSIntegrationSettings from '../components/POSIntegrationSettings';
 
 const SettingsPage = () => {
   const { user, logout } = useAuth();
@@ -101,6 +102,9 @@ const SettingsPage = () => {
         <p className="text-white/50">Manage your account and preferences</p>
         <Sparkles className="absolute -top-2 -right-2 text-yellow-400 animate-pulse" size={24} />
       </div>
+
+      {/* POS Integrations */}
+      {user?.role === 'owner' && <POSIntegrationSettings />}
 
       {/* Appearance Section */}
       <Section title="Appearance" icon={Palette} color="purple">

@@ -18,6 +18,7 @@ export interface User {
   email: string;
   role: UserRole;
   avatar?: string;
+  venueId?: string;
 }
 
 interface AuthContextType {
@@ -53,7 +54,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: firebaseUser.email!,
               name: data.name || 'User',
               role: data.role || 'staff', // Default to staff if missing
-              avatar: data.avatar
+              avatar: data.avatar,
+              venueId: data.venueId
             });
           } else {
             // Fallback if profile doesn't exist yet (shouldn't happen with correct signup flow)

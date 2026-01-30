@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, Shield, Mail, Trash2, MoreVertical, CheckCircle, Save, Loader2 } from 'lucide-react';
+import { Users, UserPlus, Shield, Mail, Trash2, MoreVertical, CheckCircle, Save, Loader2, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, app } from '../lib/firebase';
-import { X } from 'lucide-react';
+import { CertificationUploader } from '../components/CertificationUploader';
 
 const TeamPage = () => {
   const { user } = useAuth();
+  const [selectedMember, setSelectedMember] = useState<string | null>(null);
   
   // Mock Data (replace with real fetch in production)
   const [teamMembers, setTeamMembers] = useState([
@@ -30,7 +31,42 @@ const TeamPage = () => {
   const [savingEmail, setSavingEmail] = useState(false);
   const [emailSaved, setEmailSaved] = useState(false);
 
-  // ... (rest of existing code)
+  // Load Settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        if (!db) return;
+        const docRef = doc(db, 'venueSettings', 'default');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setReportEmail(docSnap.data().reportEmail || '');
+        }
+      } catch (err) {
+        console.error("Error loading settings:", err);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleSaveEmail = async () => {
+    setSavingEmail(true);
+    setEmailSaved(false);
+    try {
+      if (!db) throw new Error("No DB");
+      await setDoc(doc(db, 'venueSettings', 'default'), {
+        reportEmail,
+        updatedAt: new Date(),
+        updatedBy: user?.id
+      }, { merge: true });
+      setEmailSaved(true);
+      setTimeout(() => setEmailSaved(false), 3000);
+    } catch (err) {
+      console.error("Error saving email:", err);
+      alert("Failed to save settings");
+    } finally {
+      setSavingEmail(false);
+    }
+  };
 
   const handleCreateMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,43 +120,6 @@ const TeamPage = () => {
       alert("Failed to create user: " + error.message);
     } finally {
       setIsCreating(false);
-    }
-  };
-
-  // Load Settings
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        if (!db) return;
-        const docRef = doc(db, 'venueSettings', 'default');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setReportEmail(docSnap.data().reportEmail || '');
-        }
-      } catch (err) {
-        console.error("Error loading settings:", err);
-      }
-    };
-    loadSettings();
-  }, []);
-
-  const handleSaveEmail = async () => {
-    setSavingEmail(true);
-    setEmailSaved(false);
-    try {
-      if (!db) throw new Error("No DB");
-      await setDoc(doc(db, 'venueSettings', 'default'), {
-        reportEmail,
-        updatedAt: new Date(),
-        updatedBy: user?.id
-      }, { merge: true });
-      setEmailSaved(true);
-      setTimeout(() => setEmailSaved(false), 3000);
-    } catch (err) {
-      console.error("Error saving email:", err);
-      alert("Failed to save settings");
-    } finally {
-      setSavingEmail(false);
     }
   };
 
@@ -178,42 +177,94 @@ const TeamPage = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {teamMembers.map((member) => (
-              <tr key={member.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold border border-gray-200">
-                      {member.name.charAt(0)}
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{member.name}</div>
-                      <div className="text-sm text-gray-500 flex items-center">
-                        <Mail size={12} className="mr-1" /> {member.email}
+              <React.Fragment key={member.id}>
+                <tr 
+                  className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
+                  onClick={() => setSelectedMember(selectedMember === member.id.toString() ? null : member.id.toString())}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold border border-gray-200">
+                        {member.name.charAt(0)}
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{member.name}</div>
+                        <div className="text-sm text-gray-500 flex items-center">
+                          <Mail size={12} className="mr-1" /> {member.email}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getRoleColor(member.role)} uppercase tracking-wide`}>
-                    {member.role}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    member.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {member.status === 'active' && <CheckCircle size={12} className="mr-1" />}
-                    {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {member.lastActive}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <MoreVertical size={20} />
-                  </button>
-                </td>
-              </tr>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getRoleColor(member.role)} uppercase tracking-wide`}>
+                      {member.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      member.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {member.status === 'active' && <CheckCircle size={12} className="mr-1" />}
+                      {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {member.lastActive}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button className="text-gray-400 group-hover:text-blue-600 transition-colors">
+                      <MoreVertical size={20} />
+                    </button>
+                  </td>
+                </tr>
+                
+                {/* Expanded Details Row */}
+                {selectedMember === member.id.toString() && (
+                  <tr className="bg-gray-50/50">
+                    <td colSpan={5} className="px-6 py-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         {/* Left: Cert List */}
+                         <div>
+                           <div className="flex items-center justify-between mb-4">
+                             <h4 className="font-bold text-gray-900">Active Certifications</h4>
+                             <span className="text-xs text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded">
+                               {user?.role === 'owner' ? 'Owner View' : 'Manager View'}
+                             </span>
+                           </div>
+                           
+                           {/* Certification List Mock */}
+                           <div className="space-y-3">
+                             <div className="flex items-center justify-between p-4 bg-white border border-green-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                               <div className="flex items-center">
+                                 <div className="p-2 bg-green-50 rounded-lg mr-3">
+                                   <Shield className="text-green-600" size={20} />
+                                 </div>
+                                 <div>
+                                   <p className="text-sm font-bold text-gray-900">ServSafe Manager</p>
+                                   <p className="text-xs text-green-600 font-medium">Valid until Dec 15, 2028</p>
+                                 </div>
+                               </div>
+                               <button className="text-gray-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors">
+                                 <Trash2 size={16} />
+                               </button>
+                             </div>
+
+                             {/* Empty State */}
+                             <div className="flex items-center justify-center p-4 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-sm">
+                               No other certifications on file
+                             </div>
+                           </div>
+                         </div>
+                         
+                         {/* Right: Uploader */}
+                         <div>
+                           <CertificationUploader memberId={member.id.toString()} />
+                         </div>
+                       </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>

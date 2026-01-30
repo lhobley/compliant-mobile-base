@@ -8,6 +8,7 @@ import Layout from './components/layout/Layout';
 import { InventoryHomePage } from './pages/inventory/InventoryHomePage';
 import { CategoryDetailPage } from './pages/inventory/CategoryDetailPage';
 import ChecklistPage from './pages/ChecklistPage';
+import ReportsPage from './pages/ReportsPage';
 import AuditPage from './pages/AuditPage';
 import TeamPage from './pages/TeamPage';
 import SettingsPage from './pages/SettingsPage';
@@ -170,6 +171,7 @@ function AppRoutes() {
           <Route path="inventory" element={<InventoryHomePage />} />
           <Route path="inventory/:sessionId/:categoryId" element={<CategoryDetailPage />} />
           <Route path="checklists" element={<ChecklistPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="audits" element={<AuditPage />} />
           <Route 
             path="team" 
