@@ -2,36 +2,18 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStripe } from '../lib/stripe';
 import { useAuth } from '../contexts/AuthContext';
-import { Check, Zap, Crown, Sparkles, Loader2 } from 'lucide-react';
+import { Check, Crown, Loader2 } from 'lucide-react';
 
 const plans = [
   {
-    id: 'basic',
-    name: 'Starter',
-    price: '$29',
-    period: '/month',
-    description: 'Perfect for small venues getting started',
-    priceId: import.meta.env.VITE_STRIPE_PRICE_ID_BASIC,
-    features: [
-      'Up to 1 location',
-      'Basic inventory tracking',
-      'Standard audits',
-      'Email support',
-      '5 team members',
-    ],
-    icon: Zap,
-    color: 'from-blue-500 to-cyan-500',
-    popular: false,
-  },
-  {
     id: 'pro',
     name: 'Professional',
-    price: '$79',
+    price: '$39.99',
     period: '/month',
-    description: 'For growing businesses with multiple locations',
+    description: 'Complete compliance management for your business',
     priceId: import.meta.env.VITE_STRIPE_PRICE_ID_PRO,
     features: [
-      'Up to 5 locations',
+      'Unlimited locations',
       'AI-powered inventory',
       'Voice-guided audits',
       'Priority support',
@@ -42,26 +24,6 @@ const plans = [
     icon: Crown,
     color: 'from-purple-500 to-pink-500',
     popular: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 'Custom',
-    period: '',
-    description: 'For large chains with custom needs',
-    priceId: null,
-    features: [
-      'Unlimited locations',
-      'Custom AI training',
-      'Dedicated account manager',
-      '24/7 phone support',
-      'SLA guarantee',
-      'API access',
-      'White-label options',
-    ],
-    icon: Sparkles,
-    color: 'from-amber-500 to-orange-500',
-    popular: false,
   },
 ];
 
@@ -77,7 +39,7 @@ const PricingPage = () => {
     }
 
     if (!priceId) {
-      // Enterprise plan - redirect to contact
+      // Enterprise plan - redirect to contact (fallback)
       window.location.href = 'mailto:sales@compliancedaddy.com?subject=Enterprise Plan Inquiry';
       return;
     }
@@ -91,8 +53,6 @@ const PricingPage = () => {
         throw new Error('Stripe failed to load');
       }
 
-      // Create checkout session via your backend/cloud function
-      // For now, we'll redirect to Stripe Checkout directly
       const { error } = await stripe.redirectToCheckout({
         lineItems: [
           {
@@ -124,28 +84,27 @@ const PricingPage = () => {
       <div className="text-center space-y-4">
         <h1 className="text-5xl font-black text-white">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400">
-            Choose Your Plan
+            Simple, Transparent Pricing
           </span>
         </h1>
         <p className="text-xl text-white/60 max-w-2xl mx-auto">
-          Start with AI-powered compliance management today. 
-          Upgrade or downgrade anytime.
+          One plan, everything included. Start with AI-powered compliance management today.
         </p>
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="flex flex-wrap justify-center gap-8">
         {plans.map((plan) => (
           <div
             key={plan.id}
-            className={`relative rounded-2xl overflow-hidden group ${
+            className={`relative rounded-2xl overflow-hidden group w-full max-w-md ${
               plan.popular ? 'md:-mt-4 md:mb-4' : ''
             }`}
           >
             {/* Popular badge */}
             {plan.popular && (
               <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center py-2 text-sm font-bold z-10">
-                MOST POPULAR
+                ALL INCLUSIVE
               </div>
             )}
 
