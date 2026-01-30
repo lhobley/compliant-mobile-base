@@ -170,7 +170,7 @@ const PricingPage = () => {
       <div className="flex flex-wrap justify-center gap-8 text-white/40 text-sm">
         <div className="flex items-center">
           <Check className="mr-2 text-green-400" size={16} />
-          14-day free trial
+          2-day free trial
         </div>
         <div className="flex items-center">
           <Check className="mr-2 text-green-400" size={16} />
