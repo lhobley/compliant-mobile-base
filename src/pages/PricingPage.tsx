@@ -38,13 +38,6 @@ const PricingPage = () => {
       return;
     }
 
-    const paymentLink = import.meta.env.VITE_JIM_PAYMENT_LINK;
-    if (!priceId && paymentLink) {
-        // Fallback to Payment Link if no Stripe Price ID
-        window.location.href = paymentLink;
-        return;
-    }
-
     if (!priceId) {
       // Enterprise plan - redirect to contact (fallback)
       window.location.href = 'mailto:sales@compliancedaddy.com?subject=Enterprise Plan Inquiry';
@@ -54,12 +47,6 @@ const PricingPage = () => {
     setLoading(planId);
 
     try {
-      // Try direct payment link first if available and pro plan
-      if (planId === 'pro' && paymentLink) {
-          window.location.href = paymentLink;
-          return;
-      }
-
       const stripe = await getStripe();
       
       if (!stripe) {
