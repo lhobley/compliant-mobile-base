@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import Layout from './components/layout/Layout';
 import { InventoryHomePage } from './pages/inventory/InventoryHomePage';
 import { CategoryDetailPage } from './pages/inventory/CategoryDetailPage';
 import ChecklistPage from './pages/ChecklistPage';
 import AuditPage from './pages/AuditPage';
 import TeamPage from './pages/TeamPage';
+import SettingsPage from './pages/SettingsPage';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import TermsOfService from './pages/legal/TermsOfService';
 
@@ -39,7 +41,7 @@ const Dashboard = () => (
 );
 
 // Protected Route Component
-const ProtectedRoute = ({ children, requiredPermission }: { children: JSX.Element, requiredPermission?: string }) => {
+const ProtectedRoute = ({ children, requiredPermission }: { children: React.ReactNode, requiredPermission?: string }) => {
   const { user, loading, can } = useAuth();
   
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
@@ -77,6 +79,10 @@ function AppRoutes() {
             path="team" 
             element={<TeamPage />} 
           />
+          <Route 
+            path="settings" 
+            element={<SettingsPage />} 
+          />
           <Route path="legal/privacy" element={<PrivacyPolicy />} />
           <Route path="legal/terms" element={<TermsOfService />} />
         </Route>
@@ -88,9 +94,11 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <AppRoutes />
-      </QueryClientProvider>
+      <SettingsProvider>
+        <QueryClientProvider client={queryClient}>
+          <AppRoutes />
+        </QueryClientProvider>
+      </SettingsProvider>
     </AuthProvider>
   );
 }

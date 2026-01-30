@@ -3,6 +3,7 @@ import {
   X, Check, AlertTriangle, Loader2, Image as ImageIcon 
 } from 'lucide-react';
 import { AIDetection, MasterItem } from '../../types/inventoryTypes';
+import { useSettings } from '../../contexts/SettingsContext';
 import { uploadInventoryPhoto, analyzeAlcoholPhoto, mapDetectionsToItems } from '../../lib/aiInventoryService';
 import { saveInventoryLine } from '../../lib/inventoryService';
 
@@ -18,6 +19,7 @@ interface PhotoReviewModalProps {
 export const PhotoReviewModal: React.FC<PhotoReviewModalProps> = ({
   file, sessionId, locationId, items, onClose, onApply
 }) => {
+  const { aiFeaturesEnabled } = useSettings();
   const [step, setStep] = useState<'uploading' | 'analyzing' | 'review'>('uploading');
   const [detections, setDetections] = useState<AIDetection[]>([]);
   const [mappedResults, setMappedResults] = useState<AIDetection[]>([]);
@@ -33,6 +35,14 @@ export const PhotoReviewModal: React.FC<PhotoReviewModalProps> = ({
       setStep('uploading');
       const url = await uploadInventoryPhoto(file, sessionId);
       setPhotoUrl(url);
+
+      if (!aiFeaturesEnabled) {
+        // Skip AI analysis, just show photo for manual reference
+        setStep('review');
+        setDetections([]);
+        setMappedResults([]);
+        return;
+      }
 
       // 2. Analyze
       setStep('analyzing');
@@ -134,13 +144,24 @@ export const PhotoReviewModal: React.FC<PhotoReviewModalProps> = ({
                 </div>
               )}
 
+              {/* AI Disabled Message */}
+              {!aiFeaturesEnabled && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-yellow-800">
+                    <strong>AI Features Disabled:</strong> Photo uploaded for reference only. Manual input required.
+                  </p>
+                </div>
+              )}
+
               {/* Detections List */}
               <div>
                 <h4 className="font-bold text-gray-900 mb-4 flex items-center">
-                  Detected Items 
-                  <span className="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
-                    {mappedResults.length}
-                  </span>
+                  {aiFeaturesEnabled ? 'Detected Items' : 'Manual Entry'}
+                  {aiFeaturesEnabled && (
+                    <span className="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+                      {mappedResults.length}
+                    </span>
+                  )}
                 </h4>
                 
                 <div className="space-y-3">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ClipboardCheck, FileCheck, Package, X, ChevronRight, Users, Settings, Scale, Shield } from 'lucide-react';
+import { LayoutDashboard, ClipboardCheck, FileCheck, Package, X, ChevronRight, Users, Settings, Scale, Shield, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
@@ -9,8 +9,13 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
-  const { user, can } = useAuth();
+  const { user, can, logout } = useAuth();
   const navigate = useNavigate();
+  
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
   
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -99,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         </nav>
 
         {/* User Profile Footer */}
-        <div className="p-4 border-t border-slate-800/50 bg-slate-900/50 backdrop-blur-sm">
+        <div className="p-4 border-t border-slate-800/50 bg-slate-900/50 backdrop-blur-sm space-y-2">
           <div 
             onClick={() => {
               navigate('/team');
@@ -108,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
             className="flex items-center p-2 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors group"
           >
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-slate-800 group-hover:ring-slate-700">
-              {user?.avatar}
+              {user?.avatar || user?.name?.charAt(0) || 'U'}
             </div>
             <div className="ml-3 flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">{user?.name}</p>
@@ -122,6 +127,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
             </div>
             <ChevronRight size={16} className="text-slate-500" />
           </div>
+          
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center w-full p-2 rounded-lg hover:bg-red-900/30 text-red-400 hover:text-red-300 transition-colors group"
+          >
+            <LogOut size={18} className="mr-3" />
+            <span className="text-sm font-medium">Log Out</span>
+          </button>
         </div>
       </div>
     </>

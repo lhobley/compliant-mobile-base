@@ -85,7 +85,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
+    const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+    
+    // Set user immediately to prevent race condition
+    // Full profile will be fetched by onAuthStateChanged
+    setUser({
+      id: userCredential.user.uid,
+      email: userCredential.user.email!,
+      name: userCredential.user.displayName || email.split('@')[0],
+      role: 'owner' // Default, will be updated by onAuthStateChanged
+    });
   };
 
   const signup = async (email: string, pass: string, name: string) => {

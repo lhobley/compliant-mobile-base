@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  Mic, MicOff, Volume2, X, Camera, MessageSquare, AlertCircle, PlayCircle 
+  Mic, MicOff, Volume2, X, Camera, MessageSquare, AlertCircle, PlayCircle, Loader2
 } from 'lucide-react';
 import { 
   VoiceAuditState, VoiceAuditStatus, VoiceCommand, AuditResponse 
 } from '../../types/voiceAuditTypes';
 import { speak, stopSpeaking, startListening, stopListening, isVoiceSupported } from '../../lib/voiceService';
 import { parseVoiceCommand } from '../../lib/voiceCommandParser';
+import { useSettings } from '../../contexts/SettingsContext';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { PhotoReviewModal } from '../inventory/PhotoReviewModal'; // Reuse existing component
-import { MasterItem } from '../../types/inventoryTypes'; // For type compatibility
+import { PhotoReviewModal } from '../inventory/PhotoReviewModal';
+import { MasterItem } from '../../types/inventoryTypes';
 
 // Simplified types for props
 interface VoiceAuditAssistantProps {
@@ -24,6 +25,8 @@ interface VoiceAuditAssistantProps {
 export const VoiceAuditAssistant: React.FC<VoiceAuditAssistantProps> = ({
   checklistId, sessionId, locationId, items, onComplete
 }) => {
+  const { voiceEnabled } = useSettings();
+  
   // State
   const [active, setActive] = useState(false);
   const [status, setStatus] = useState<VoiceAuditStatus>('idle');
@@ -241,6 +244,13 @@ export const VoiceAuditAssistant: React.FC<VoiceAuditAssistantProps> = ({
 
   // UI Render
   if (!active) {
+    if (!voiceEnabled) {
+      return (
+        <div className="text-sm text-gray-500 italic">
+          Voice guidance disabled in settings
+        </div>
+      );
+    }
     return (
       <button 
         onClick={() => { setActive(true); setStatus('idle'); }}

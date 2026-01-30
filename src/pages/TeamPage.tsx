@@ -82,9 +82,8 @@ const TeamPage = () => {
            </div>
         </div>
         <div className="flex space-x-2">
-          <button onClick={() => login('owner')} className={`px-3 py-1 rounded text-sm ${user?.role === 'owner' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'}`}>Owner</button>
-          <button onClick={() => login('manager')} className={`px-3 py-1 rounded text-sm ${user?.role === 'manager' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'}`}>Manager</button>
-          <button onClick={() => login('staff')} className={`px-3 py-1 rounded text-sm ${user?.role === 'staff' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'}`}>Staff</button>
+          <span className="text-sm text-slate-400">Current Role:</span>
+          <span className={`px-3 py-1 rounded text-sm uppercase font-bold ${user?.role === 'owner' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>{user?.role}</span>
         </div>
       </div>
 

@@ -7,8 +7,6 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import en from './locales/en.json';
 import es from './locales/es.json';
 import fr from './locales/fr.json';
-import zh from './locales/zh.json';
-import hi from './locales/hi.json';
 
 // Configuration
 i18n
@@ -19,8 +17,6 @@ i18n
       en: { translation: en },
       es: { translation: es },
       fr: { translation: fr },
-      zh: { translation: zh },
-      hi: { translation: hi },
     },
     fallbackLng: 'en',
     debug: true,

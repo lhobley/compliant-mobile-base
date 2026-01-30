@@ -5,6 +5,7 @@ import {
 import { MasterItem } from '../../types/inventoryTypes';
 import { speak, stopSpeaking, startListening, stopListening } from '../../lib/voiceService';
 import { parseVoiceNumber, parseInventoryCommand } from '../../lib/voiceInventoryParser';
+import { useSettings } from '../../contexts/SettingsContext';
 import { PhotoReviewModal } from './PhotoReviewModal';
 
 interface VoiceInventoryAssistantProps {
@@ -20,6 +21,7 @@ type Status = 'idle' | 'speaking' | 'listening' | 'processing';
 export const VoiceInventoryAssistant: React.FC<VoiceInventoryAssistantProps> = ({
   sessionId, locationId, items, onSave, onComplete
 }) => {
+  const { voiceEnabled } = useSettings();
   const [active, setActive] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -179,6 +181,13 @@ export const VoiceInventoryAssistant: React.FC<VoiceInventoryAssistantProps> = (
   };
 
   if (!active) {
+    if (!voiceEnabled) {
+      return (
+        <div className="text-xs text-gray-400 italic">
+          Voice disabled
+        </div>
+      );
+    }
     return (
       <button 
         onClick={() => { setActive(true); setStatus('idle'); }}

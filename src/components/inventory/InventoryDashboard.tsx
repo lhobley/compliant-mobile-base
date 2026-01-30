@@ -29,7 +29,7 @@ export const InventoryDashboard: React.FC<{ venueId: string }> = ({ venueId }) =
         ...doc.data(),
         id: doc.id,
         // Convert timestamp to Date if needed, Firestore returns Timestamp objects
-        lastUpdated: doc.data().lastUpdated?.toDate() || new Date(), 
+        lastUpdated: (doc.data().lastUpdated as any)?.toDate?.() || new Date(), 
       } as InventoryItem));
 
       // Fallback to mock if empty (for demo purposes so the app isn't empty on first run)
