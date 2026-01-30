@@ -7,7 +7,7 @@ import {
   onAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
 export type UserRole = 'owner' | 'manager' | 'staff';
@@ -40,50 +40,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Monitor Firebase Auth state
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          // Fetch additional user data (role, name) from Firestore
-          const docRef = doc(db, 'profiles', firebaseUser.uid);
-          const docSnap = await getDoc(docRef);
+    let unsubscribeProfile = () => {};
 
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Clean up previous profile listener
+      unsubscribeProfile();
+
+      if (firebaseUser) {
+        // Set up real-time listener for profile
+        const docRef = doc(db, 'profiles', firebaseUser.uid);
+        
+        unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
             setUser({
               id: firebaseUser.uid,
               email: firebaseUser.email!,
               name: data.name || 'User',
-              role: data.role || 'staff', // Default to staff if missing
+              role: data.role || 'staff',
               avatar: data.avatar,
               venueId: data.venueId
             });
           } else {
-            // Fallback if profile doesn't exist yet (shouldn't happen with correct signup flow)
-            console.warn('User profile not found in Firestore');
-            setUser({
+            // Profile missing, create default or handle as error
+             setUser({
               id: firebaseUser.uid,
               email: firebaseUser.email!,
               name: firebaseUser.displayName || 'User',
-              role: 'owner', // Default fallback
+              role: 'owner',
             });
           }
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-          // Fallback if Firestore fails
-          setUser({
-            id: firebaseUser.uid,
-            email: firebaseUser.email!,
-            name: firebaseUser.displayName || 'User',
-            role: 'owner',
-          });
-        }
+          setLoading(false);
+        }, (error) => {
+           console.error("Profile sync error:", error);
+           setLoading(false);
+        });
+
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeAuth();
+      unsubscribeProfile();
+    };
   }, []);
 
   const login = async (email: string, pass: string) => {
