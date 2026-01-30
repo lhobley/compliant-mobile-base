@@ -1,82 +1,45 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getStripe } from '../lib/stripe';
 import { useAuth } from '../contexts/AuthContext';
-import { Check, Crown, Loader2 } from 'lucide-react';
-
-const plans = [
-  {
-    id: 'pro',
-    name: 'Professional',
-    price: '$39.99',
-    period: '/month',
-    description: 'Complete compliance management for your business',
-    priceId: import.meta.env.VITE_STRIPE_PRICE_ID_PRO,
-    features: [
-      'Unlimited locations',
-      'AI-powered inventory',
-      'Voice-guided audits',
-      'Priority support',
-      'Unlimited team members',
-      'Advanced analytics',
-      'Custom checklists',
-    ],
-    icon: Crown,
-    color: 'from-purple-500 to-pink-500',
-    popular: true,
-  },
-];
+import { Check, Crown, Loader2, ExternalLink } from 'lucide-react';
 
 const PricingPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleSubscribe = async (planId: string, priceId: string | null) => {
+  const handleSubscribe = async (planId: string) => {
     if (!user) {
       navigate('/login');
       return;
     }
 
-    if (!priceId) {
-      // Enterprise plan - redirect to contact (fallback)
-      window.location.href = 'mailto:sales@compliancedaddy.com?subject=Enterprise Plan Inquiry';
+    // Use Stripe Payment Link for the $39.99 plan
+    // This is the recommended approach for client-only apps
+    const paymentLink = import.meta.env.VITE_STRIPE_PAYMENT_LINK;
+    
+    if (!paymentLink) {
+      alert('Payment link not configured. Please contact support.');
       return;
     }
 
-    setLoading(planId);
-
-    try {
-      const stripe = await getStripe();
-      
-      if (!stripe) {
-        throw new Error('Stripe failed to load');
-      }
-
-      const { error } = await (stripe as any).redirectToCheckout({
-        lineItems: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        mode: 'subscription',
-        successUrl: `${window.location.origin}/settings?subscription=success`,
-        cancelUrl: `${window.location.origin}/pricing?subscription=cancelled`,
-        customerEmail: user.email,
-      });
-
-      if (error) {
-        console.error('Stripe error:', error);
-        alert(error.message);
-      }
-    } catch (err) {
-      console.error('Checkout error:', err);
-      alert('Failed to start checkout. Please try again.');
-    } finally {
-      setLoading(null);
-    }
+    // Append customer email to pre-fill it in Stripe Checkout
+    const url = new URL(paymentLink);
+    url.searchParams.append('prefilled_email', user.email);
+    
+    // Open in same window (or use _blank for new tab)
+    window.location.href = url.toString();
   };
+
+  const features = [
+    'Unlimited locations',
+    'AI-powered inventory',
+    'Voice-guided audits',
+    'Priority support',
+    'Unlimited team members',
+    'Advanced analytics',
+    'Custom checklists',
+  ];
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 py-8">
@@ -94,76 +57,62 @@ const PricingPage = () => {
 
       {/* Pricing Cards */}
       <div className="flex flex-wrap justify-center gap-8">
-        {plans.map((plan) => (
-          <div
-            key={plan.id}
-            className={`relative rounded-2xl overflow-hidden group w-full max-w-md ${
-              plan.popular ? 'md:-mt-4 md:mb-4' : ''
-            }`}
-          >
-            {/* Popular badge */}
-            {plan.popular && (
-              <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center py-2 text-sm font-bold z-10">
-                ALL INCLUSIVE
-              </div>
-            )}
-
-            {/* Card background */}
-            <div className="absolute inset-0 bg-white/5 backdrop-blur-lg" />
-            <div className={`absolute inset-0 border ${plan.popular ? 'border-purple-500/50' : 'border-white/10'} rounded-2xl`} />
-            
-            {/* Glow effect for popular */}
-            {plan.popular && (
-              <div className="absolute inset-0 bg-purple-500/10 blur-xl" />
-            )}
-
-            <div className={`relative p-8 ${plan.popular ? 'pt-12' : ''}`}>
-              {/* Icon */}
-              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${plan.color} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform`}>
-                <plan.icon className="text-white" size={32} />
-              </div>
-
-              {/* Plan name */}
-              <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-              <p className="text-white/50 text-sm mb-6">{plan.description}</p>
-
-              {/* Price */}
-              <div className="mb-6">
-                <span className="text-5xl font-black text-white">{plan.price}</span>
-                <span className="text-white/50">{plan.period}</span>
-              </div>
-
-              {/* Features */}
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start text-white/80">
-                    <Check className="mr-3 text-green-400 flex-shrink-0 mt-0.5" size={18} />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* CTA Button */}
-              <button
-                onClick={() => handleSubscribe(plan.id, plan.priceId)}
-                disabled={loading === plan.id}
-                className={`w-full py-4 rounded-xl font-bold transition-all transform hover:scale-105 disabled:opacity-50 ${
-                  plan.popular
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50'
-                    : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
-                }`}
-              >
-                {loading === plan.id ? (
-                  <Loader2 className="animate-spin mx-auto" size={20} />
-                ) : plan.priceId ? (
-                  'Get Started'
-                ) : (
-                  'Contact Sales'
-                )}
-              </button>
-            </div>
+        <div className="relative rounded-2xl overflow-hidden group w-full max-w-md md:-mt-4 md:mb-4">
+          {/* Popular badge */}
+          <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center py-2 text-sm font-bold z-10">
+            ALL INCLUSIVE
           </div>
-        ))}
+
+          {/* Card background */}
+          <div className="absolute inset-0 bg-white/5 backdrop-blur-lg" />
+          <div className="absolute inset-0 border border-purple-500/50 rounded-2xl" />
+          
+          {/* Glow effect */}
+          <div className="absolute inset-0 bg-purple-500/10 blur-xl" />
+
+          <div className="relative p-8 pt-12">
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+              <Crown className="text-white" size={32} />
+            </div>
+
+            {/* Plan name */}
+            <h3 className="text-2xl font-bold text-white mb-2">Professional</h3>
+            <p className="text-white/50 text-sm mb-6">Complete compliance management for your business</p>
+
+            {/* Price */}
+            <div className="mb-6">
+              <span className="text-5xl font-black text-white">$39.99</span>
+              <span className="text-white/50">/month</span>
+            </div>
+
+            {/* Features */}
+            <ul className="space-y-3 mb-8">
+              {features.map((feature, idx) => (
+                <li key={idx} className="flex items-start text-white/80">
+                  <Check className="mr-3 text-green-400 flex-shrink-0 mt-0.5" size={18} />
+                  <span className="text-sm">{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* CTA Button */}
+            <button
+              onClick={() => handleSubscribe('pro')}
+              disabled={loading === 'pro'}
+              className="w-full py-4 rounded-xl font-bold transition-all transform hover:scale-105 disabled:opacity-50 bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 flex items-center justify-center"
+            >
+              {loading === 'pro' ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <>
+                  Get Started
+                  <ExternalLink className="ml-2" size={18} />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Trust badges */}

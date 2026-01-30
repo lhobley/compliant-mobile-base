@@ -11,6 +11,7 @@ interface ImportMetaEnv {
   readonly VITE_STRIPE_PUBLIC_KEY: string;
   readonly VITE_STRIPE_PRICE_ID_BASIC: string;
   readonly VITE_STRIPE_PRICE_ID_PRO: string;
+  readonly VITE_STRIPE_PAYMENT_LINK: string;
 }
 
 interface ImportMeta {
