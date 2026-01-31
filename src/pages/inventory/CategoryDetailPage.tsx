@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, Camera, Loader2, Save, Upload 
+  ArrowLeft, Camera, Loader2, Save, CheckCircle,
+  Mic, FileSpreadsheet
 } from 'lucide-react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { MasterItem, InventoryLine, InventoryCategoryType, CATEGORIES } from '../../types/inventoryTypes';
 import { saveInventoryLine } from '../../lib/inventoryService';
 import { PhotoReviewModal } from '../../components/inventory/PhotoReviewModal';
-import { VoiceInventoryAssistant } from '../../components/inventory/VoiceInventoryAssistant';
+import { VoiceInput } from '../../components/inventory/VoiceInput';
+import { ExcelUpload } from '../../components/inventory/ExcelUpload';
 
 const LOCATION_ID = 'loc_main_bar';
 
@@ -20,6 +22,7 @@ export const CategoryDetailPage = () => {
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Photo State
   const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -33,6 +36,7 @@ export const CategoryDetailPage = () => {
 
   const loadData = async () => {
     setLoading(true);
+    setError(null);
     try {
       // 1. Fetch Master Items
       const itemsQ = query(collection(db, 'items'), where('categoryId', '==', categoryId));
@@ -55,8 +59,9 @@ export const CategoryDetailPage = () => {
         });
         setCounts(initialCounts);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setError(`Failed to load data: ${e.message}`);
     } finally {
       setLoading(false);
     }
@@ -74,10 +79,38 @@ export const CategoryDetailPage = () => {
       if (sessionId) {
         await saveInventoryLine(sessionId, LOCATION_ID, item, val);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Save failed", e);
+      setError(`Save failed: ${e.message}`);
     } finally {
       setSaving(null);
+    }
+  };
+
+  const handleBulkUpload = async (uploadedCounts: Record<string, number>) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Update local state
+      const newCounts: Record<string, string> = { ...counts };
+      
+      for (const [itemId, count] of Object.entries(uploadedCounts)) {
+        newCounts[itemId] = count.toString();
+        
+        // Save to database
+        const item = items.find(i => i.id === itemId);
+        if (item && sessionId) {
+          await saveInventoryLine(sessionId, LOCATION_ID, item, count);
+        }
+      }
+      
+      setCounts(newCounts);
+      alert(`Successfully updated ${Object.keys(uploadedCounts).length} items!`);
+    } catch (e: any) {
+      setError(`Bulk upload failed: ${e.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -98,42 +131,40 @@ export const CategoryDetailPage = () => {
       });
       return next;
     });
-    // Re-fetch or rely on optimistic update logic? 
-    // Ideally we should persist these immediately in the modal, 
-    // but here we just update UI. The modal handles the saving.
     loadData(); 
   };
+
+  // Calculate progress
+  const completedCount = Object.keys(counts).filter(k => counts[k] && parseFloat(counts[k]) > 0).length;
+  const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
+  const allComplete = completedCount === items.length && items.length > 0;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div className="flex items-center">
           <button onClick={() => navigate(-1)} className="mr-4 p-2 hover:bg-gray-100 rounded-full">
             <ArrowLeft size={20} />
           </button>
-          <div className="flex items-center">
+          <div>
             <h1 className="text-2xl font-bold text-gray-900">{categoryName}</h1>
-            <p className="text-gray-500 text-sm ml-4 hidden sm:block">Inventory Check</p>
-          </div>
-          
-          <div className="mt-2 sm:mt-0">
-             {items.length > 0 && sessionId && (
-               <VoiceInventoryAssistant 
-                 sessionId={sessionId}
-                 locationId={LOCATION_ID}
-                 items={items}
-                 onSave={handleSaveCount}
-                 onComplete={() => alert("Category Complete!")}
-               />
-             )}
+            <p className="text-gray-500 text-sm">Inventory Check</p>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* Excel Upload */}
+          <ExcelUpload 
+            items={items} 
+            onUpload={handleBulkUpload}
+            categoryName={categoryName}
+          />
+
+          {/* AI Photo */}
           <label className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-bold cursor-pointer hover:bg-blue-700 transition-colors shadow-md">
             <Camera size={18} />
-            <span className="hidden sm:inline">AI Photo Scan</span>
+            <span className="hidden sm:inline">AI Photo</span>
             <input 
               type="file" 
               accept="image/*" 
@@ -145,16 +176,63 @@ export const CategoryDetailPage = () => {
         </div>
       </div>
 
+      {/* Progress Bar */}
+      <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium text-gray-700">
+            Progress: {completedCount} / {items.length} items
+          </span>
+          <span className={`text-sm font-bold ${allComplete ? 'text-green-600' : 'text-blue-600'}`}>
+            {progressPercent}%
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div 
+            className={`h-3 rounded-full transition-all duration-500 ${allComplete ? 'bg-green-500' : 'bg-blue-500'}`}
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        {allComplete && (
+          <div className="mt-2 flex items-center text-green-600 text-sm">
+            <CheckCircle size={16} className="mr-1" />
+            All items counted!
+          </div>
+        )}
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Instructions */}
+      <div className="mb-4 bg-blue-50 border border-blue-100 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <Mic className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+          <div className="text-sm text-blue-800">
+            <p className="font-medium">Voice Input Available</p>
+            <p>Click the microphone icon next to any count field to speak the number. You can also type manually.</p>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
-        <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>
+        <div className="flex justify-center p-12"><Loader2 className="animate-spin" size={32} /></div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Par</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Count</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Par</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                  <div className="flex items-center justify-end gap-2">
+                    <Mic size={14} />
+                    Count
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -169,17 +247,14 @@ export const CategoryDetailPage = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="relative">
-                      <input 
-                        type="number"
-                        inputMode="decimal"
-                        className="block w-full text-right rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 pr-8 border"
-                        placeholder="0"
+                      {/* Voice Input Component */}
+                      <VoiceInput
                         value={counts[item.id] || ''}
-                        onChange={(e) => setCounts(prev => ({...prev, [item.id]: e.target.value}))}
-                        onBlur={(e) => handleSaveCount(item, e.target.value)}
+                        onChange={(val) => setCounts(prev => ({...prev, [item.id]: val}))}
+                        onBlur={() => handleSaveCount(item, counts[item.id] || '0')}
                       />
                       {saving === item.id && (
-                        <div className="absolute right-2 top-2.5">
+                        <div className="absolute right-10 top-2.5">
                           <Loader2 size={14} className="animate-spin text-blue-500" />
                         </div>
                       )}
