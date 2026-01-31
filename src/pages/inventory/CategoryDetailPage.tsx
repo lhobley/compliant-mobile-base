@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, Camera, Loader2, Save, CheckCircle,
-  Mic, FileSpreadsheet
+  ArrowLeft, Camera, Loader2, CheckCircle, Mic, FileSpreadsheet
 } from 'lucide-react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';

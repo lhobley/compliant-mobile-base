@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mic, MicOff, Loader2 } from 'lucide-react';
 
 interface VoiceInputProps {
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 // Type definitions for Web Speech API
@@ -46,12 +47,13 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   value, 
   onChange, 
   onBlur,
-  placeholder = "0" 
+  placeholder = "0",
+  disabled = false
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognitionInterface | null>(null);
+  const recognitionRef = React.useRef<SpeechRecognitionInterface | null>(null);
 
   useEffect(() => {
     // Check if browser supports speech recognition
@@ -132,29 +134,30 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   };
 
   return (
-    <div className="relative flex items-center">
+    <div className="relative flex items-center w-full">
       <input
         type="number"
         inputMode="decimal"
-        className="block w-full text-right rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 pr-12 border"
+        className="block w-full text-right rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 pr-12 border disabled:opacity-50 disabled:bg-gray-100"
         placeholder={placeholder}
         value={value}
         onChange={handleInputChange}
         onBlur={onBlur}
+        disabled={disabled}
       />
       
       {/* Voice Button */}
       <button
         type="button"
         onClick={toggleListening}
-        disabled={!!error}
+        disabled={!!error || disabled}
         className={`
           absolute right-2 p-1.5 rounded-md transition-all
           ${isListening 
             ? 'bg-red-100 text-red-600 animate-pulse' 
             : 'bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600'
           }
-          ${error ? 'opacity-50 cursor-not-allowed' : ''}
+          ${(error || disabled) ? 'opacity-50 cursor-not-allowed' : ''}
         `}
         title={error || (isListening ? 'Click to stop' : 'Click to speak')}
       >
@@ -167,14 +170,14 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
 
       {/* Listening Indicator */}
       {isListening && (
-        <div className="absolute -top-8 right-0 bg-red-500 text-white text-xs px-2 py-1 rounded animate-pulse whitespace-nowrap">
+        <div className="absolute -top-8 right-0 bg-red-500 text-white text-xs px-2 py-1 rounded animate-pulse whitespace-nowrap z-10">
           Listening...
         </div>
       )}
 
       {/* Transcript Preview */}
       {transcript && !isListening && (
-        <div className="absolute -top-8 right-0 bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded whitespace-nowrap max-w-[200px] truncate">
+        <div className="absolute -top-8 right-0 bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded whitespace-nowrap max-w-[200px] truncate z-10">
           Heard: &quot;{transcript}&quot;
         </div>
       )}

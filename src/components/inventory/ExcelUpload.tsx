@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileSpreadsheet, X, Check, AlertCircle } from 'lucide-react';
+import { Upload, FileSpreadsheet, X, Check, AlertCircle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { MasterItem } from '../../types/inventoryTypes';
 
@@ -182,7 +182,7 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({ items, onUpload, categ
               onClick={downloadTemplate}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
-              <FileSpreadsheet size={18} />
+              <Download size={18} />
               Download
             </button>
           </div>
